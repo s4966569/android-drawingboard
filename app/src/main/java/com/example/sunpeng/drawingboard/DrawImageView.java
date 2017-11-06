@@ -3,11 +3,18 @@ package com.example.sunpeng.drawingboard;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Region;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 
 /**
  * Created by sunpeng on 2017/10/12.
@@ -21,6 +28,10 @@ public class DrawImageView extends AppCompatImageView {
     private static final int MODE_DRAG = 1;
     /** 放大缩小照片模式 */
     private static final int MODE_ZOOM = 2;
+    /**涂画模式*/
+    private static final int MODE_DRAW = 3;
+
+    private static final int MODE_ERASE = 4;
 
     /** 用于记录开始时候的坐标位置 */
     private PointF startPoint = new PointF();
@@ -31,25 +42,54 @@ public class DrawImageView extends AppCompatImageView {
 
     /** 两个手指的开始距离 */
     private float startDis;
+
+    private float lastDis;
     /** 两个手指的中间点 */
     private PointF midPoint;
 
+    private boolean isMultiTouch = false;
+    private int touchSlop;
+
+    private Paint paint;
+
+    private Path path,erasePath;
+
     public DrawImageView(Context context) {
         super(context);
+        init(context);
     }
 
     public DrawImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init(context);
     }
 
     public DrawImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        init(context);
     }
 
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if(!path.isEmpty()){
+            canvas.drawPath(path,paint);
+        }
+    }
+
+    private void init(Context context){
+        setDrawingCacheEnabled(true);
+//        setDrawingCacheQuality(DRAWING_CACHE_QUALITY_HIGH);
+
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(Color.RED);
+        paint.setStrokeWidth(8);
+        paint.setStyle(Paint.Style.STROKE);
+
+        path = new Path();
+        erasePath = new Path();
     }
 
 
@@ -59,46 +99,81 @@ public class DrawImageView extends AppCompatImageView {
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             // 手指压下屏幕
             case MotionEvent.ACTION_DOWN:
-                mode = MODE_DRAG;
+                mode = MODE_DRAW;
                 // 记录ImageView当前的移动位置
                 currentMatrix.set(getImageMatrix());
                 startPoint.set(event.getX(), event.getY());
+                path.moveTo(event.getX(),event.getY());
                 break;
             // 手指在屏幕上移动，改事件会被不断触发
             case MotionEvent.ACTION_MOVE:
-                // 拖拉图片
-                if (mode == MODE_DRAG) {
-                    float dx = event.getX() - startPoint.x; // 得到x轴的移动距离
-                    float dy = event.getY() - startPoint.y; // 得到y轴的移动距离
-                    // 在没有移动之前的位置上进行移动
-                    matrix.set(currentMatrix);
-                    matrix.postTranslate(dx, dy);
-                }
-                // 放大缩小图片
-                else if (mode == MODE_ZOOM) {
-                    float endDis = distance(event);// 结束距离
-                    if (endDis > 10f) { // 两个手指并拢在一起的时候像素大于10
-                        float scale = endDis / startDis;// 得到缩放倍数
-
+                currentMatrix.set(getImageMatrix());
+                if(isMultiTouch && event.getPointerCount() > 1){
+                    float dis = distance(event);
+                    Log.i("dis",String.valueOf(dis - lastDis));
+                    if(Math.abs(dis - lastDis) < 5){
+                        mode = MODE_DRAG;
+                    }else {
+                        mode = MODE_ZOOM;
+                    }
+                    lastDis = dis;
+                    // 拖拉图片
+                    if (mode == MODE_DRAG) {
+                        float dx = event.getX() - startPoint.x; // 得到x轴的移动距离
+                        float dy = event.getY() - startPoint.y; // 得到y轴的移动距离
+                        // 在没有移动之前的位置上进行移动
                         matrix.set(currentMatrix);
-                        matrix.postScale(scale, scale,midPoint.x,midPoint.y);
+                        matrix.postTranslate(dx, dy);
+                        startDis = distance(event);
+                        if(!path.isEmpty()){
+                            path.offset(dx,dy);
+                        }
+                    }
+                    // 放大缩小图片
+                    else if (mode == MODE_ZOOM) {
+                        midPoint = mid(event);
+                        float endDis = distance(event);// 结束距离
+                        if (endDis > 10f) { // 两个手指并拢在一起的时候像素大于10
+                            float scale = endDis / startDis;// 得到缩放倍数
+
+                            matrix.set(currentMatrix);
+                            matrix.postScale(scale, scale,midPoint.x,midPoint.y);
+
+                            if(!path.isEmpty()){
+                                Matrix scaleMatrix = new Matrix();
+                                scaleMatrix.setScale(scale, scale,midPoint.x,midPoint.y);
+
+                                path.transform(scaleMatrix);
+                            }
+
+
+                        }
+                        startDis = distance(event);
+                    }
+                }else if(!isMultiTouch){
+                    mode = MODE_DRAW;
+                    //涂画模式
+                    if(distance(startPoint,new Point((int)event.getX(), (int)event.getY())) > touchSlop){
+                        path.lineTo(event.getX(),event.getY());
+                        postInvalidate();
                     }
                 }
+                Log.i("mode",String.valueOf(mode));
+                startPoint.set(event.getX(), event.getY());
                 break;
             // 手指离开屏幕
             case MotionEvent.ACTION_UP:
-                // 当触点离开屏幕，但是屏幕上还有触点(手指)
+                isMultiTouch = false;
+                break;
+            // 当触点离开屏幕，但是屏幕上还有触点(手指)
             case MotionEvent.ACTION_POINTER_UP:
-                mode = 0;
-//                    currentMatrix.set(iv.getImageMatrix());
-//                    startPoint.set(event.getX(), event.getY());
                 break;
             // 当屏幕上已经有触点(手指)，再有一个触点压下屏幕
             case MotionEvent.ACTION_POINTER_DOWN:
-                mode = MODE_ZOOM;
-//                    midPoint= new PointF((iv.getLeft()+iv.getRight())/2f,(iv.getTop()+iv.getBottom())/2f);
+                isMultiTouch = true;
                 /** 计算两个手指间的距离 */
                 startDis = distance(event);
+                lastDis = startDis;
                 /** 计算两个手指间的中间点 */
                 if (startDis > 10f) { // 两个手指并拢在一起的时候像素大于10
                     midPoint = mid(event);
@@ -120,10 +195,31 @@ public class DrawImageView extends AppCompatImageView {
         return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
+    private float distance(PointF p1,Point p2){
+        float dx = p1.x - p2.x;
+        float dy = p1.y - p2.y;
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
     /** 计算两个手指间的中间点 */
     private PointF mid(MotionEvent event) {
         float midX = (event.getX(1) + event.getX(0)) / 2;
         float midY = (event.getY(1) + event.getY(0)) / 2;
         return new PointF(midX, midY);
+    }
+
+    public void resetPath(){
+        if (path != null && !path.isEmpty()){
+            path.reset();
+            postInvalidate();
+        }
+    }
+
+    public void changeMode(){
+        if(mode == MODE_ERASE){
+            mode = 0;
+        }else {
+            mode = MODE_ERASE;
+        }
     }
 }

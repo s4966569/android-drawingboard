@@ -11,7 +11,7 @@ import com.example.sunpeng.drawingboard.R;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btn_move;
+    private Button btn_move,btn_erase;
     private DrawImageView iv;
     private Matrix matrix;
     @Override
@@ -20,15 +20,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         btn_move = (Button) findViewById(R.id.btn);
+        btn_erase = (Button) findViewById(R.id.btn1);
         iv = (DrawImageView) findViewById(R.id.iv);
 
         matrix = new Matrix();
         btn_move.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                matrix.set(iv.getImageMatrix());
-                matrix.postTranslate(30,100);
-                iv.setImageMatrix(matrix);
+                iv.resetPath();
+            }
+        });
+
+        btn_erase.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                iv.changeMode();
             }
         });
     }

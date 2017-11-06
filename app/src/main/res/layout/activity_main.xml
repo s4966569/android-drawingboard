@@ -12,7 +12,13 @@
         android:id="@+id/btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="move"/>
+        android:text="reset"/>
+
+    <Button
+        android:id="@+id/btn1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="erase"/>
 
     <com.example.sunpeng.drawingboard.DrawImageView
         android:id="@+id/iv"
