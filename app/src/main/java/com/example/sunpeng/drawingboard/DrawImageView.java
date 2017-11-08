@@ -10,11 +10,15 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Region;
+import android.support.v4.content.res.TypedArrayUtils;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by sunpeng on 2017/10/12.
@@ -54,6 +58,8 @@ public class DrawImageView extends AppCompatImageView {
 
     private Path path,erasePath;
 
+    private ArrayList<PointF> pts = new ArrayList<>();
+
     public DrawImageView(Context context) {
         super(context);
         init(context);
@@ -73,9 +79,12 @@ public class DrawImageView extends AppCompatImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if(!path.isEmpty()){
-            canvas.drawPath(path,paint);
+        if(pts.size() > 0){
+            drawLines(canvas,pts);
         }
+//        if(!path.isEmpty()){
+//            canvas.drawPath(path,paint);
+//        }
     }
 
     private void init(Context context){
@@ -104,6 +113,7 @@ public class DrawImageView extends AppCompatImageView {
                 currentMatrix.set(getImageMatrix());
                 startPoint.set(event.getX(), event.getY());
                 path.moveTo(event.getX(),event.getY());
+                pts.add(new PointF(event.getX(),event.getY()));
                 break;
             // 手指在屏幕上移动，改事件会被不断触发
             case MotionEvent.ACTION_MOVE:
@@ -153,10 +163,9 @@ public class DrawImageView extends AppCompatImageView {
                 }else if(!isMultiTouch){
                     mode = MODE_DRAW;
                     //涂画模式
-                    if(distance(startPoint,new Point((int)event.getX(), (int)event.getY())) > touchSlop){
-                        path.lineTo(event.getX(),event.getY());
-                        postInvalidate();
-                    }
+                    pts.add(new PointF(event.getX(),event.getY()));
+                    path.lineTo(event.getX(),event.getY());
+                    postInvalidate();
                 }
                 Log.i("mode",String.valueOf(mode));
                 startPoint.set(event.getX(), event.getY());
@@ -220,6 +229,20 @@ public class DrawImageView extends AppCompatImageView {
             mode = 0;
         }else {
             mode = MODE_ERASE;
+        }
+    }
+
+    private float[] arrayToFloat(List<Float> list){
+        float[] result = new float[list.size()];
+        for(int i =0; i< list.size(); i ++){
+            result[i] = list.get(i);
+        }
+        return result;
+    }
+
+    private void drawLines(Canvas canvas, List<PointF> points){
+        for (int i=0; i < points.size() - 1; i ++){
+            canvas.drawLine(points.get(i).x,points.get(i).y,points.get(i+1).x,points.get(i+1).y,paint);
         }
     }
 }
