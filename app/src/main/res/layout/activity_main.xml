@@ -38,7 +38,7 @@
 
     </LinearLayout>
 
-    <com.example.sunpeng.drawingboard.DrawImageView
+    <com.example.sunpeng.drawingboard.TouchScaleImageView
         android:id="@+id/iv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

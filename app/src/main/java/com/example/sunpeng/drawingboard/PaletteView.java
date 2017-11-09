@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -36,6 +37,7 @@ public class PaletteView extends View {
 
     private float mLastX, mLastY;
     private Xfermode mClearMode;
+    private Matrix mMatrix;
 
     private ArrayList<PathDrawingInfo> mCachedPathList;
     private ArrayList<PathDrawingInfo> mRemovedPathList;
@@ -69,6 +71,7 @@ public class PaletteView extends View {
     private void init() {
         mMode = Mode.DRAW;
         mPath = new Path();
+        mMatrix = new Matrix();
 
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
         mPaint.setStyle(Paint.Style.STROKE);

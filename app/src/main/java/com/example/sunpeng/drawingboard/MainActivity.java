@@ -6,38 +6,36 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
-
-import com.example.sunpeng.drawingboard.R;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btn_move,btn_erase, btn_enter, btn_palette;
-    private DrawImageView iv;
+    private Button btn_reset,btn_erase, btn_enter, btn_palette;
+    private TouchScaleImageView iv;
     private Matrix matrix;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btn_move = (Button) findViewById(R.id.btn);
+        btn_reset = (Button) findViewById(R.id.btn);
         btn_erase = (Button) findViewById(R.id.btn1);
         btn_enter = (Button) findViewById(R.id.btn2);
         btn_palette = (Button)findViewById(R.id.btn3);
-        iv = (DrawImageView) findViewById(R.id.iv);
+        iv = (TouchScaleImageView) findViewById(R.id.iv);
 
         matrix = new Matrix();
-        btn_move.setOnClickListener(new View.OnClickListener() {
+        btn_reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                iv.resetPath();
+                double angle = Math.asin(0.5);
+                Toast.makeText(MainActivity.this,String.valueOf(angle),Toast.LENGTH_SHORT).show();
             }
         });
 
         btn_erase.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                iv.changeMode();
             }
         });
 
