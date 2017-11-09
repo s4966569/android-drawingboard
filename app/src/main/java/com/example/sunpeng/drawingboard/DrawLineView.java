@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Build;
@@ -110,7 +111,13 @@ public class DrawLineView extends View {
         PointF pointF;
         while (iterator.hasNext()){
             pointF = iterator.next();
-            if(Math.abs(pointF.x - x) < 40.0 && Math.abs(pointF.y - y ) < 40.0){
+//            if(Math.abs(pointF.x - x) < 40.0 && Math.abs(pointF.y - y ) < 40.0){
+//                iterator.remove();
+//                Log.i("erase","::::::::x=" + String.valueOf(x) +"&&y=" + String.valueOf(y));
+//                postInvalidate();
+//            }
+
+            if(isPointInCircle(pointF,x,y)){
                 iterator.remove();
                 Log.i("erase","::::::::x=" + String.valueOf(x) +"&&y=" + String.valueOf(y));
                 postInvalidate();
@@ -122,6 +129,14 @@ public class DrawLineView extends View {
         for (int i=0; i < points.size() - 1; i ++){
             canvas.drawLine(points.get(i).x,points.get(i).y,points.get(i+1).x,points.get(i+1).y,paint);
         }
+    }
+
+    private boolean isPointInCircle(PointF p,float x,float y){
+        boolean b = false;
+        if((p.x - x) * (p.x - x) + (p.y -y) * (p.y - y) <= 4){
+            b = true;
+        }
+        return  b;
     }
 
     public void changeMode(){

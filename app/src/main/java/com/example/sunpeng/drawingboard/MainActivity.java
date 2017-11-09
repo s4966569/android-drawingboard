@@ -12,7 +12,7 @@ import com.example.sunpeng.drawingboard.R;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btn_move,btn_erase, btn_enter;
+    private Button btn_move,btn_erase, btn_enter, btn_palette;
     private DrawImageView iv;
     private Matrix matrix;
     @Override
@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
         btn_move = (Button) findViewById(R.id.btn);
         btn_erase = (Button) findViewById(R.id.btn1);
         btn_enter = (Button) findViewById(R.id.btn2);
+        btn_palette = (Button)findViewById(R.id.btn3);
         iv = (DrawImageView) findViewById(R.id.iv);
 
         matrix = new Matrix();
@@ -44,6 +45,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this,DrawLineActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        btn_palette.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,PaletteActivity.class);
                 startActivity(intent);
             }
         });

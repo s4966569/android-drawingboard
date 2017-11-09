@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="15dp"
     android:orientation="vertical"
-    tools:context="com.example.sunpeng.drawingboard.MainActivity">
+    tools:context="com.example.sunpeng.drawingboard.PaletteActivity">
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,38 +15,36 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/btn"
+            android:id="@+id/btn_switch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="reset"/>
+            android:text="draw"/>
 
         <Button
-            android:id="@+id/btn1"
+            android:id="@+id/btn_undo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="erase"/>
+            android:text="undo"/>
 
         <Button
-            android:id="@+id/btn2"
+            android:id="@+id/btn_redo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="enter"/>
+            android:text="redo"/>
 
         <Button
-            android:id="@+id/btn3"
+            android:id="@+id/btn_clear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="palette"/>
+            android:text="clear"/>
+
 
     </LinearLayout>
 
-    <com.example.sunpeng.drawingboard.DrawImageView
-        android:id="@+id/iv"
+
+    <com.example.sunpeng.drawingboard.PaletteView
+        android:id="@+id/palette"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="matrix"
-        android:src="@drawable/mm"/>
-
-
+        android:layout_height="match_parent" />
 
 </LinearLayout>
