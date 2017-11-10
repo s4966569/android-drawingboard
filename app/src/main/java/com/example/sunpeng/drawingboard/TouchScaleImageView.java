@@ -26,7 +26,6 @@ public class TouchScaleImageView extends AppCompatImageView {
     private static final int MODE_ZOOM = 2;
 
     private PointF mLastPoint0 = new PointF();
-    private PointF mLastPoint1 = new PointF();
 
     /** 用于记录拖拉图片移动的坐标位置 */
     private Matrix mMatrix = new Matrix();
@@ -112,7 +111,6 @@ public class TouchScaleImageView extends AppCompatImageView {
                     mLastDis = dis;
 
                     mLastPoint0.set(event.getX(), event.getY());
-                    mLastPoint1.set(event.getX(1),event.getY(1));
                 }
                 break;
             // 手指离开屏幕
@@ -125,7 +123,6 @@ public class TouchScaleImageView extends AppCompatImageView {
             // 当屏幕上已经有触点(手指)，再有一个触点压下屏幕
             case MotionEvent.ACTION_POINTER_DOWN:
                 mIsMultiTouch = true;
-                mLastPoint1.set(event.getX(1),event.getY(1));
                 /** 计算两个手指间的距离 */
                 mLastDis = distance(event);
                 /** 计算两个手指间的中间点 */

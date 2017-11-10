@@ -8,6 +8,7 @@ import android.widget.Button;
 public class PaletteActivity extends AppCompatActivity {
     private Button btn_switch,btn_undo,btn_redo,btn_clear;
     private PaletteView mPaletteView;
+    private PaletteImageView iv_palette;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -17,6 +18,7 @@ public class PaletteActivity extends AppCompatActivity {
         btn_redo = (Button)findViewById(R.id.btn_redo);
         btn_clear = (Button)findViewById(R.id.btn_clear);
         mPaletteView = (PaletteView) findViewById(R.id.palette);
+        iv_palette = (PaletteImageView) findViewById(R.id.iv_palette);
 
         btn_switch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -26,6 +28,14 @@ public class PaletteActivity extends AppCompatActivity {
                     btn_switch.setText("eraser");
                 }else if(mPaletteView.getMode() == PaletteView.Mode.ERASER){
                     mPaletteView.setMode(PaletteView.Mode.DRAW);
+                    btn_switch.setText("draw");
+                }
+
+                if(iv_palette.getMode() == PaletteImageView.Mode.DRAW){
+                    iv_palette.setMode(PaletteImageView.Mode.ERASER);
+                    btn_switch.setText("eraser");
+                }else if(iv_palette.getMode() == PaletteImageView.Mode.ERASER){
+                    iv_palette.setMode(PaletteImageView.Mode.DRAW);
                     btn_switch.setText("draw");
                 }
             }

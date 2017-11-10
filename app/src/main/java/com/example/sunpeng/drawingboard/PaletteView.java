@@ -33,7 +33,6 @@ public class PaletteView extends View {
     private int mLineColor;
 
     private PointF mLastPoint0 = new PointF();
-    private PointF mLastPoint1 = new PointF();
     private float mLastDis;
 
     private PointF midPoint;
@@ -123,7 +122,6 @@ public class PaletteView extends View {
         }
         canvas.drawBitmap(mBgBitmap,mMatrix,null);
         if (mBufferBitmap != null) {
-//            canvas.drawBitmap(mBufferBitmap, 0, 0, null);
             canvas.drawBitmap(mBufferBitmap,mMatrix,null);
         }
     }
@@ -171,7 +169,6 @@ public class PaletteView extends View {
 
                     mLastDis = dis;
                     mLastPoint0.set(event.getX(), event.getY());
-                    mLastPoint1.set(event.getX(1),event.getY(1));
 
                 }else if(mMode == Mode.DRAW || mMode == Mode.ERASER){
                     if (mBufferBitmap == null)
@@ -191,7 +188,6 @@ public class PaletteView extends View {
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 mIsMultiTouch = true;
-                mLastPoint1.set(event.getX(1),event.getY(1));
                 mLastDis = distance(event);
                 midPoint = mid(event);
                 break;

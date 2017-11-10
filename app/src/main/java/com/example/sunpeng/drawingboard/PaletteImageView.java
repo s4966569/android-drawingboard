@@ -15,6 +15,7 @@ import android.graphics.Xfermode;
 import android.os.Build;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
  * Created by sunpeng on 2017/11/8.
  */
 
-public class PaletteView extends View {
+public class PaletteImageView extends AppCompatImageView {
     private Paint mPaint;
     private Path mPath,mTempPath;
     private int mLineWidth;
@@ -33,7 +34,6 @@ public class PaletteView extends View {
     private int mLineColor;
 
     private PointF mLastPoint0 = new PointF();
-    private PointF mLastPoint1 = new PointF();
     private float mLastDis;
 
     private PointF midPoint;
@@ -50,8 +50,7 @@ public class PaletteView extends View {
     private float mLastX, mLastY;
     private Xfermode mClearMode;
     private Matrix mMatrix;
-
-    private Bitmap mBgBitmap;
+    private Matrix mCurrentImgMatrix;
 
     private ArrayList<PathDrawingInfo> mCachedPathList;
     private ArrayList<PathDrawingInfo> mRemovedPathList;
@@ -63,24 +62,18 @@ public class PaletteView extends View {
         ZOOM
     }
 
-    public PaletteView(Context context) {
+    public PaletteImageView(Context context) {
         super(context);
         init();
     }
 
-    public PaletteView(Context context, @Nullable AttributeSet attrs) {
+    public PaletteImageView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public PaletteView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public PaletteImageView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public PaletteView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
@@ -117,13 +110,7 @@ public class PaletteView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if(mBgBitmap == null){
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(),R.drawable.mm);
-            mBgBitmap = Bitmap.createBitmap(bitmap,0,0,getWidth(),getHeight());
-        }
-        canvas.drawBitmap(mBgBitmap,mMatrix,null);
         if (mBufferBitmap != null) {
-//            canvas.drawBitmap(mBufferBitmap, 0, 0, null);
             canvas.drawBitmap(mBufferBitmap,mMatrix,null);
         }
     }
@@ -138,7 +125,7 @@ public class PaletteView extends View {
          float matrixY = (y - values[Matrix.MTRANS_Y]) / values[Matrix.MSCALE_Y];
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                if(mMode != Mode.DRAW && mMode !=Mode.ERASER){
+                if(mMode != Mode.DRAW && mMode != Mode.ERASER){
                     setMode(Mode.DRAW);
                 }
                 mPath.moveTo(matrixX, matrixY);
@@ -160,6 +147,7 @@ public class PaletteView extends View {
                         mTranslateX += dx;
                         mTranslateY += dy;
                         mMatrix.postTranslate(dx, dy);
+                        setImageMatrix(mMatrix);
                     }
                     // 放大缩小图片
                     else if (mMode == Mode.ZOOM) {
@@ -167,19 +155,19 @@ public class PaletteView extends View {
                         float endDis = distance(event);// 结束距离
                         float scale = endDis / mLastDis;// 得到缩放倍数
                         mMatrix.postScale(scale, scale,midPoint.x,midPoint.y);
+                        setImageMatrix(mMatrix);
                     }
 
                     mLastDis = dis;
                     mLastPoint0.set(event.getX(), event.getY());
-                    mLastPoint1.set(event.getX(1),event.getY(1));
 
                 }else if(mMode == Mode.DRAW || mMode == Mode.ERASER){
                     if (mBufferBitmap == null)
                         initDrawBuffer();
                     mPath.lineTo(matrixX, matrixY);
                     mBufferCanvas.drawPath(mPath, mPaint);
+                    invalidate();
                 }
-                postInvalidate();
                 break;
             case MotionEvent.ACTION_UP:
                 if(mMode == Mode.DRAW || mMode == Mode.ERASER){
@@ -191,7 +179,6 @@ public class PaletteView extends View {
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 mIsMultiTouch = true;
-                mLastPoint1.set(event.getX(1),event.getY(1));
                 mLastDis = distance(event);
                 midPoint = mid(event);
                 break;
@@ -228,7 +215,7 @@ public class PaletteView extends View {
             for (PathDrawingInfo pathDrawingInfo : mCachedPathList) {
                 pathDrawingInfo.draw(mBufferCanvas);
             }
-            postInvalidate();
+            invalidate();
         }
     }
 
