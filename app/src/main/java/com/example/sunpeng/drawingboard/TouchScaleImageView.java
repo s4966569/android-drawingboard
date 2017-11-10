@@ -110,9 +110,10 @@ public class TouchScaleImageView extends AppCompatImageView {
                     }
 
                     mLastDis = dis;
+
+                    mLastPoint0.set(event.getX(), event.getY());
+                    mLastPoint1.set(event.getX(1),event.getY(1));
                 }
-                mLastPoint0.set(event.getX(), event.getY());
-                mLastPoint1.set(event.getX(1),event.getY(1));
                 break;
             // 手指离开屏幕
             case MotionEvent.ACTION_UP:
@@ -134,6 +135,7 @@ public class TouchScaleImageView extends AppCompatImageView {
                 break;
         }
         setImageMatrix(mMatrix);
+
         return true;
     }
 

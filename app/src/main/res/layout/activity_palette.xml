@@ -42,9 +42,15 @@
     </LinearLayout>
 
 
-    <com.example.sunpeng.drawingboard.PaletteView
-        android:id="@+id/palette"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
+
+        <com.example.sunpeng.drawingboard.PaletteView
+            android:id="@+id/palette"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </FrameLayout>
 
 </LinearLayout>
