@@ -1,57 +1,68 @@
 package com.example.sunpeng.drawingboard;
 
 import android.content.Intent;
-import android.graphics.Matrix;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-
-    private Button btn_reset,btn_erase, btn_enter, btn_palette;
-    private TouchScaleImageView iv;
-    private Matrix matrix;
+    private Button btn_switch,btn_undo,btn_redo, btn_reset,btn_enter;
+    private PaletteView mPaletteView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btn_reset = (Button) findViewById(R.id.btn);
-        btn_erase = (Button) findViewById(R.id.btn1);
-        btn_enter = (Button) findViewById(R.id.btn2);
-        btn_palette = (Button)findViewById(R.id.btn3);
-        iv = (TouchScaleImageView) findViewById(R.id.iv);
+        btn_switch = (Button) findViewById(R.id.btn_switch);
+        btn_undo = (Button)findViewById(R.id.btn_undo);
+        btn_redo = (Button)findViewById(R.id.btn_redo);
+        btn_reset = (Button)findViewById(R.id.btn_reset);
+        btn_enter = (Button) findViewById(R.id.btn_enter);
+        mPaletteView = (PaletteView) findViewById(R.id.palette);
 
-        matrix = new Matrix();
+        btn_switch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mPaletteView.getMode() == PaletteView.Mode.DRAW){
+                    mPaletteView.setMode(PaletteView.Mode.ERASER);
+                    btn_switch.setText("eraser");
+                }else if(mPaletteView.getMode() == PaletteView.Mode.ERASER){
+                    mPaletteView.setMode(PaletteView.Mode.DRAW);
+                    btn_switch.setText("draw");
+                }
+            }
+        });
+
+        btn_undo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPaletteView.undo();
+            }
+        });
+
+        btn_redo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPaletteView.redo();
+            }
+        });
+
         btn_reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                double angle = Math.asin(0.5);
-                Toast.makeText(MainActivity.this,String.valueOf(angle),Toast.LENGTH_SHORT).show();
+                mPaletteView.clear();
             }
         });
 
-        btn_erase.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-            }
-        });
 
         btn_enter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-
-        btn_palette.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this,PaletteActivity.class);
                 startActivity(intent);
             }
         });
+
     }
 }
