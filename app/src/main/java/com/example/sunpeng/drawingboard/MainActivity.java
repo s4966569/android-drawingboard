@@ -24,11 +24,11 @@ public class MainActivity extends AppCompatActivity {
         btn_switch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mPaletteView.getMode() == PaletteView.Mode.DRAW){
-                    mPaletteView.setMode(PaletteView.Mode.ERASER);
+                if(mPaletteView.getPaintMode() == PaletteView.PaintMode.DRAW){
+                    mPaletteView.setPaintMode(PaletteView.PaintMode.ERASER);
                     btn_switch.setText("eraser");
-                }else if(mPaletteView.getMode() == PaletteView.Mode.ERASER){
-                    mPaletteView.setMode(PaletteView.Mode.DRAW);
+                }else if(mPaletteView.getPaintMode() == PaletteView.PaintMode.ERASER){
+                    mPaletteView.setPaintMode(PaletteView.PaintMode.DRAW);
                     btn_switch.setText("draw");
                 }
             }

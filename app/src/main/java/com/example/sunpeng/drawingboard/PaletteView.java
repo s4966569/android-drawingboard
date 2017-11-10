@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Xfermode;
 import android.os.Build;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
@@ -26,27 +27,29 @@ import java.util.ArrayList;
  */
 
 public class PaletteView extends View {
+
+    private static final int DRAG = 1;
+    private static final int ZOOM = 2;
+    private static final int TIME_INTERVAL = 500;  //时间间隔（用来判定是单指触摸还是多指）
     private Paint mPaint;
-    private Path mPath,mTempPath;
+    private Path mPath;
     private int mLineWidth;
     private int mEraseWidth;
     private int mLineColor;
-
+    long mActionDownBegin = 0;  //单根手指按下的时间
+    long mActionPointerDownBegin = 0; //第二根或者以上的手指按下屏幕
     private PointF mLastPoint0 = new PointF();
     private float mLastDis;
 
     private PointF midPoint;
-
-    private boolean mIsMultiTouch = false;
+    private Boolean mIsMultiTouch = false;
 
     private Bitmap mBufferBitmap;
     private Canvas mBufferCanvas;
 
-    private Mode mMode;
+    private PaintMode mPaintMode;
+    private TouchMode mTouchMode;
 
-    private float mTranslateX,mTranslateY;
-
-    private float mLastX, mLastY;
     private Xfermode mClearMode;
     private Matrix mMatrix;
 
@@ -55,11 +58,15 @@ public class PaletteView extends View {
     private ArrayList<PathDrawingInfo> mCachedPathList;
     private ArrayList<PathDrawingInfo> mRemovedPathList;
 
-    public enum Mode {
+    public enum PaintMode {
         DRAW,
-        ERASER,
-        DRAG,
-        ZOOM
+        ERASER
+    }
+
+    public enum TouchMode{
+        SINGLE_TOUCH,
+        MULTITOUCH,
+        NONE
     }
 
     public PaletteView(Context context) {
@@ -84,9 +91,8 @@ public class PaletteView extends View {
     }
 
     private void init() {
-        mMode = Mode.DRAW;
+        mPaintMode = PaintMode.DRAW;
         mPath = new Path();
-        mTempPath = new Path();
         mMatrix = new Matrix();
 
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -136,31 +142,29 @@ public class PaletteView extends View {
          float matrixY = (y - values[Matrix.MTRANS_Y]) / values[Matrix.MSCALE_Y];
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                if(mMode != Mode.DRAW && mMode !=Mode.ERASER){
-                    setMode(Mode.DRAW);
-                }
+                mTouchMode = TouchMode.SINGLE_TOUCH;
+                mActionDownBegin = SystemClock.uptimeMillis();
                 mPath.moveTo(matrixX, matrixY);
                 mLastPoint0.set(event.getX(), event.getY());
                 break;
             case MotionEvent.ACTION_MOVE:
-                if(mIsMultiTouch && event.getPointerCount() > 1){
+                //判断是否是多根手指的原因是因为存在一种情况就是一开始是multiTouch,但是过程中，抬起了几根手指，只剩下一根手指
+                if(mTouchMode == TouchMode.MULTITOUCH){
                     float dis = distance(event);
+                    int multiTouchGesture = -1;
                     if(Math.abs(dis - mLastDis) < 10){
-                        mMode = Mode.DRAG;
+                        multiTouchGesture = DRAG;
                     }else {
-                        mMode = Mode.ZOOM;
+                        multiTouchGesture = ZOOM;
                     }
                     // 拖拉图片
-                    if (mMode == Mode.DRAG) {
+                    if (multiTouchGesture == DRAG) {
                         float dx = event.getX() - mLastPoint0.x; // 得到x轴的移动距离
                         float dy = event.getY() - mLastPoint0.y; // 得到y轴的移动距离
-                        // 在没有移动之前的位置上进行移动
-                        mTranslateX += dx;
-                        mTranslateY += dy;
                         mMatrix.postTranslate(dx, dy);
                     }
                     // 放大缩小图片
-                    else if (mMode == Mode.ZOOM) {
+                    else if (multiTouchGesture == ZOOM) {
                         midPoint = mid(event);
                         float endDis = distance(event);// 结束距离
                         float scale = endDis / mLastDis;// 得到缩放倍数
@@ -169,27 +173,42 @@ public class PaletteView extends View {
 
                     mLastDis = dis;
                     mLastPoint0.set(event.getX(), event.getY());
+                    postInvalidate();
 
-                }else if(mMode == Mode.DRAW || mMode == Mode.ERASER){
+                }else if(mTouchMode == TouchMode.SINGLE_TOUCH){
                     if (mBufferBitmap == null)
                         initDrawBuffer();
                     mPath.lineTo(matrixX, matrixY);
                     mBufferCanvas.drawPath(mPath, mPaint);
+                    postInvalidate();
+
                 }
-                postInvalidate();
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                mTouchMode = TouchMode.NONE;
                 break;
             case MotionEvent.ACTION_UP:
-                if(mMode == Mode.DRAW || mMode == Mode.ERASER){
+                if(!mPath.isEmpty()){
                     savePathDrawingInfo(mPaint, mPath);
+                    //清除反撤销
                     mRemovedPathList.clear();
                 }
                 mPath.reset();
-                mIsMultiTouch = false;
+                mTouchMode = TouchMode.SINGLE_TOUCH;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                mIsMultiTouch = true;
-                mLastDis = distance(event);
-                midPoint = mid(event);
+                //优化体验，以免想双指操作的时候，因为时间差，第一个手指被判定为画线操作
+                if(!mPath.isEmpty()){
+                    mActionPointerDownBegin = SystemClock.uptimeMillis();
+                    if(mActionPointerDownBegin - mActionDownBegin < TIME_INTERVAL){
+                        mPath.reset();
+                        reDraw();
+                        mTouchMode = TouchMode.MULTITOUCH;
+                        mLastDis = distance(event);
+                    }else {
+                        mTouchMode = TouchMode.NONE;
+                    }
+                }
                 break;
             default:
                 break;
@@ -259,22 +278,22 @@ public class PaletteView extends View {
         return mRemovedPathList != null && mRemovedPathList.size() > 0;
     }
 
-    public void setMode(Mode mode) {
-        if (mMode != mode) {
-            mMode = mode;
+    public void setPaintMode(PaintMode mode) {
+        if (mPaintMode != mode) {
+            mPaintMode = mode;
             setPaintMode();
         }
     }
 
-    public Mode getMode() {
-        return mMode;
+    public PaintMode getPaintMode() {
+        return mPaintMode;
     }
 
     private void setPaintMode() {
-        if (mMode == Mode.DRAW) {
+        if (mPaintMode == PaintMode.DRAW) {
             mPaint.setXfermode(null);
             mPaint.setStrokeWidth(mLineWidth);
-        } else if(mMode == Mode.ERASER){
+        } else if(mPaintMode == PaintMode.ERASER){
             mPaint.setXfermode(mClearMode);
             mPaint.setStrokeWidth(mEraseWidth);
         }
