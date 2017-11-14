@@ -49,7 +49,8 @@
         <com.example.sunpeng.drawingboard.PaletteView
             android:id="@+id/palette"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
 
         <com.example.sunpeng.drawingboard.PaletteImageView
             android:id="@+id/iv_palette"
@@ -58,6 +59,12 @@
             android:scaleType="matrix"
             android:src="@drawable/mm"
             android:visibility="gone"/>
+
+        <com.example.sunpeng.drawingboard.ScaleTestImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="matrix"
+            android:src="@drawable/mm"/>
 
     </FrameLayout>
 

@@ -65,6 +65,10 @@
             android:src="@drawable/mm"
             android:visibility="gone"/>
 
+        <com.example.sunpeng.drawingboard.RulerView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
     </FrameLayout>
 
 </LinearLayout>
