@@ -17,6 +17,7 @@ import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -55,6 +56,10 @@ public class PaletteView extends View {
 
     private Bitmap mBgBitmap;
 
+    private Line mBaseLine; //尺子的基准线
+
+    private boolean mShouldBaseRuler = false;
+
     private ArrayList<PathDrawingInfo> mCachedPathList;
     private ArrayList<PathDrawingInfo> mRemovedPathList;
 
@@ -63,11 +68,6 @@ public class PaletteView extends View {
         ERASER
     }
 
-    public enum TouchMode{
-        SINGLE_TOUCH,
-        MULTITOUCH,
-        NONE
-    }
 
     public PaletteView(Context context) {
         super(context);
@@ -112,6 +112,8 @@ public class PaletteView extends View {
         mCachedPathList = new ArrayList<>();
         mRemovedPathList = new ArrayList<>();
 
+        mBaseLine = new Line(600,500,600,1000);
+
     }
 
     private void initDrawBuffer() {
@@ -134,13 +136,28 @@ public class PaletteView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+         final  int action = event.getAction() & MotionEvent.ACTION_MASK;
          final float x = event.getX();
          final float y = event.getY();
          float[] values = new float[9];
          mMatrix.getValues(values);
-         float matrixX =( x - values[Matrix.MTRANS_X] ) / values[Matrix.MSCALE_X];
-         float matrixY = (y - values[Matrix.MTRANS_Y]) / values[Matrix.MSCALE_Y];
-        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+         float drawX = x;
+         float drawY = y;
+         Log.i("dis",String.valueOf(mBaseLine.distanceToPoint(drawX,drawY)));
+         if(action == MotionEvent.ACTION_DOWN && mBaseLine.distanceToPoint(drawX,drawY) < 150){
+             PointF p = mBaseLine.shadowPoint(drawX,drawY);
+             drawX = p.x + mLineWidth;
+             drawY = p.y;
+             mShouldBaseRuler = true;
+         }
+         if(mTouchMode == TouchMode.SINGLE_TOUCH && mShouldBaseRuler){
+             PointF p = mBaseLine.shadowPoint(drawX,drawY);
+             drawX = p.x + mLineWidth;
+             drawY = p.y;
+         }
+         float matrixX =( drawX - values[Matrix.MTRANS_X] ) / values[Matrix.MSCALE_X];
+         float matrixY = (drawY - values[Matrix.MTRANS_Y]) / values[Matrix.MSCALE_Y];
+        switch (action) {
             case MotionEvent.ACTION_DOWN:
                 mTouchMode = TouchMode.SINGLE_TOUCH;
                 mActionDownBegin = SystemClock.uptimeMillis();
@@ -195,6 +212,7 @@ public class PaletteView extends View {
                 }
                 mPath.reset();
                 mTouchMode = TouchMode.SINGLE_TOUCH;
+                mShouldBaseRuler = false;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 //优化体验，以免想双指操作的时候，因为时间差，第一个手指被判定为画线操作
