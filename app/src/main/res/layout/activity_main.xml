@@ -66,9 +66,10 @@
             android:visibility="gone"/>
 
         <com.example.sunpeng.drawingboard.RulerView
+            android:id="@+id/ruler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:alpha="0.4"/>
+            android:alpha="0.6"/>
 
     </FrameLayout>
 

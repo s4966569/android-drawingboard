@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.Region;
 import android.os.Build;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -22,6 +24,7 @@ import android.view.ViewConfiguration;
 
 public class RulerView extends View {
 
+    private static final double PI2 = Math.PI * 2;
     private Paint mPaint;
     private int mLineWidth = 20;
     private int mLineColor = Color.YELLOW;
@@ -29,9 +32,16 @@ public class RulerView extends View {
     private PointF mLastP0,mLastP1;
     private Matrix mMatrix = new Matrix();
     private float mTranX = 0.f,mTranY = 0.f;
-    private float mRotateDegree = 0.f;
-    private float mPivotX = 0.f,mPivotY = 0.f;
+    private double mRotateDegree = 0.f; //算出来的是顺时针旋转的角度
+    private PointF mPivot,mPivot_1;  //mPivot_1:轴心点随canvas旋转之后，在canvas坐标系的坐标
+    private int mRulerTop,mRulerLeft,mRulerRight,mRulerBottom;
+    private PointF p1,p2,p3,p4; //最开始的时候，尺子的四个顶点的坐标（没有平移，也没有旋转）
+    private PointF p5,p6,p7,p8; //每次绘制完，尺子的四个顶点坐标
     private static int TOUCH_SLOP;
+    private boolean mFirstDraw = true;
+    private Paint mLinePaint;
+    private Rect mRulerRect;
+    private OnDrawFinishListener mOnDrawFinishListener;
     public RulerView(Context context) {
         super(context);
         init();
@@ -64,48 +74,106 @@ public class RulerView extends View {
         mPaint.setStrokeWidth(mLineWidth);
         mPaint.setColor(mLineColor);
 
+        mLinePaint = new Paint(mPaint);
+        mLinePaint.setColor(Color.RED);
+
         mLastP0 = new PointF();
         mLastP1 = new PointF();
+        
+        mPivot = new PointF();
+        mPivot_1 = new PointF();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        setPivotX(getWidth() /2);
-        setPivotY(getHeight() /2);
+        if(mFirstDraw){
+
+            mRulerLeft = getWidth() /2 - 150;
+            mRulerTop = -2000;
+            mRulerRight = getWidth() /2 + 150;
+            mRulerBottom = 5000;
+
+            mFirstDraw = false;
+
+            p1 = new PointF(mRulerLeft,mRulerTop);
+            p2 = new PointF(mRulerRight,mRulerTop);
+            p3 = new PointF(mRulerLeft,mRulerBottom);
+            p4 = new PointF(mRulerRight,mRulerBottom);
+
+            mRulerRect = new Rect(mRulerLeft, mRulerTop, mRulerRight, mRulerBottom);
+        }
+
         canvas.save();
         canvas.translate(mTranX,mTranY);
-        canvas.rotate(mRotateDegree);
+        canvas.rotate((float) Math.toDegrees(mRotateDegree),mPivot.x,mPivot.y);
         super.onDraw(canvas);
-        canvas.drawRect(getWidth()/ 2 - 150,-2000,getWidth() / 2 + 150,5000,mPaint);
-        Log.i("de",String.valueOf(mRotateDegree));
+        canvas.drawRect(mRulerLeft, mRulerTop, mRulerRight, mRulerBottom,mPaint);
+        //canvas是一个独立的坐标系，一开始跟view的坐标系是重合的，但是平移选装之后，canvas的坐标系也随着平移旋转，view的坐标系不变（重要）
+
+        //算出尺子的四个顶点在view坐标系的坐标
+        p5 = getPointAfterRotateAndTrans(p1,-mTranX,-mTranY, mRotateDegree,mPivot.x,mPivot.y);
+        p6 = getPointAfterRotateAndTrans(p2,-mTranX,-mTranY, mRotateDegree,mPivot.x,mPivot.y);
+        p7 = getPointAfterRotateAndTrans(p3,-mTranX,-mTranY, mRotateDegree,mPivot.x,mPivot.y);
+        p8 = getPointAfterRotateAndTrans(p4,-mTranX,-mTranY, mRotateDegree,mPivot.x,mPivot.y);
+
+
         canvas.restore();
+
+//        canvas.drawLine(p6.x,p6.y,p8.x,p8.y,mLinePaint);
+
+
+        if(mOnDrawFinishListener != null){
+            mOnDrawFinishListener.onDrawFinish();
+        }
     }
 
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final int action = event.getAction() & MotionEvent.ACTION_MASK;
-        final float x = event.getX(0);
-        final float y = event.getY(0);
+        final float x0 = event.getX(0);
+        final float y0 = event.getY(0);
+        Log.i("xy","x:" + String.valueOf(x0) + "====y:" + String.valueOf(y0));
         switch (action){
             case MotionEvent.ACTION_DOWN:
+                //需要把触摸点的坐标转换成 旋转平移后的canvas坐标系的坐标
+                PointF p = new PointF(x0,y0);
+                p = getPointAfterRotateAndTrans1(p,mTranX,mTranY, PI2 - mRotateDegree,mPivot.x,mPivot.y);
+                Region region = new Region(mRulerRect);
+                if(!region.contains((int)p.x,(int)p.y))
+                    return false;
                 mTouchMode = TouchMode.SINGLE_TOUCH;
-                mLastP0.set(x,y);
+                mLastP0.set(x0,y0);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if(mTouchMode == TouchMode.SINGLE_TOUCH){
-                    float dx = x - mLastP0.x;
-                    float dy = y - mLastP0.y;
+                    float dx = x0 - mLastP0.x;
+                    float dy = y0 - mLastP0.y;
                     mTranX += dx;
                     mTranY += dy;
-                    mLastP0.set(x,y);
+                    mLastP0.set(x0,y0);
                     invalidate();
                 }else if(mTouchMode == TouchMode.MULTITOUCH){
+                    final float x1 = event.getX(1);
+                    final float y1 = event.getY(1);
                     Line lastLine = new Line(mLastP0,mLastP1);
-                    Line currLine = new Line(x,y,event.getX(1),event.getY(1));
+                    Line currLine = new Line(x0,y0,x1,y1);
+                    //求出旋转的角度(顺时针)
                     mRotateDegree += currLine.getTwoLineDegree(lastLine);
-                    mLastP0.set(x,y);
-                    mLastP1.set(event.getX(1),event.getY(1));
+                    float dx0 = x0 - mLastP0.x;
+                    float dy0 = y0 - mLastP0.y;
+                    float dx1 = x1 - mLastP1.x;
+                    float dy1 = y1 - mLastP1.y;
+                    float dxAva = (dx0 + dx1) / 2;
+                    float dyAva = (dy0 + dy1) / 2;
+                    mTranX += dxAva;
+                    mTranY += dyAva;
+
+                    mPivot.x = (x0 + x1) / 2;
+                    mPivot.y = (y0 + y1) / 2;
+
+                    mLastP0.set(x0,y0);
+                    mLastP1.set(x1,y1);
                     invalidate();
                 }
 
@@ -113,8 +181,9 @@ public class RulerView extends View {
             case MotionEvent.ACTION_UP:
                 break;
             case MotionEvent.ACTION_POINTER_UP:
-                if (event.getPointerCount() < 3)
+                if (event.getPointerCount() < 3){
                     mTouchMode = TouchMode.SINGLE_TOUCH;
+                }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 mTouchMode = TouchMode.MULTITOUCH;
@@ -139,5 +208,49 @@ public class RulerView extends View {
         float midX = (event.getX(1) + event.getX(0)) / 2;
         float midY = (event.getY(1) + event.getY(0)) / 2;
         return new PointF(midX, midY);
+    }
+
+    private boolean isTouchInRect(float x, float y, Rect rect) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            return true;
+        }
+        return false;
+    }
+
+    //先旋转再平移(逆时针)
+    private PointF getPointAfterRotateAndTrans(PointF pointF,float tranX, float tranY, double degrees,float pivotX,float pivotY){
+        float x = pointF.x ;
+        float y = pointF.y ;
+
+        float x0 = (float) ((x - pivotX) * Math.cos(degrees) - (y - pivotY) * Math.sin( degrees)) + pivotX;
+        float y0 = (float) ((y - pivotY) * Math.cos( degrees) + (x - pivotX) * Math.sin(degrees)) + pivotY;
+
+        return new PointF(x0 - tranX,y0 - tranY);
+    }
+
+    //先平移再旋转（逆时针）
+    private PointF getPointAfterRotateAndTrans1(PointF pointF,float tranX, float tranY, double degrees,float pivotX,float pivotY){
+
+        float x = pointF.x - tranX;
+        float y = pointF.y - tranY;
+        float x0 = (float) ((x - pivotX) * Math.cos(degrees) - (y - pivotY) * Math.sin( degrees)) + pivotX;
+        float y0 = (float) ((y - pivotY) * Math.cos( degrees) + (x - pivotX) * Math.sin(degrees)) + pivotY;
+
+        return new PointF(x0,y0);
+    }
+
+    public Line getLine1(){
+        return new Line(p5,p7);
+    }
+
+    public Line getLine2(){
+        return  new Line(p6, p8);
+    }
+
+    public void setOnDrawFinishListener(OnDrawFinishListener listener){
+        mOnDrawFinishListener = listener;
+    }
+    public interface OnDrawFinishListener{
+        void onDrawFinish();
     }
 }

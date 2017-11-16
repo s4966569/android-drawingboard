@@ -49,14 +49,19 @@ public class Line {
         return new PointF(x,y);
     }
 
-    public float getTwoLineDegree(Line line){
+    /**
+     * 计算两条直线的夹角
+     * @param line
+     * @return  返回的是弧度制的角
+     */
+    public double getTwoLineDegree(Line line){
         float a1 = line.a;
         float b1 = line.b;
 
         float d = a * a1 +b * b1;
         if(d == 0){
-            return 90;
+            return Math.PI / 2;
         }
-        return (float) Math.toDegrees(Math.atan((b * a1 - a * b1) / d));
+        return Math.atan((b * a1 - a * b1) / d);
     }
 }

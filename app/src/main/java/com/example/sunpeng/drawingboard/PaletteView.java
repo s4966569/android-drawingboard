@@ -307,6 +307,10 @@ public class PaletteView extends View {
         return mPaintMode;
     }
 
+    public void setBaseLine(Line line){
+        mBaseLine = line;
+    }
+
     private void setPaintMode() {
         if (mPaintMode == PaintMode.DRAW) {
             mPaint.setXfermode(null);

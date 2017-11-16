@@ -9,6 +9,7 @@ import android.widget.Button;
 public class MainActivity extends AppCompatActivity {
     private Button btn_switch,btn_undo,btn_redo, btn_reset,btn_enter;
     private PaletteView mPaletteView;
+    private RulerView mRulerView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -20,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
         btn_reset = (Button)findViewById(R.id.btn_reset);
         btn_enter = (Button) findViewById(R.id.btn_enter);
         mPaletteView = (PaletteView) findViewById(R.id.palette);
+        mRulerView = (RulerView) findViewById(R.id.ruler);
 
         btn_switch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -61,6 +63,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this,PaletteActivity.class);
                 startActivity(intent);
+            }
+        });
+
+        mRulerView.setOnDrawFinishListener(new RulerView.OnDrawFinishListener() {
+            @Override
+            public void onDrawFinish() {
+                mPaletteView.setBaseLine(mRulerView.getLine2());
             }
         });
 
