@@ -11,12 +11,14 @@ import android.graphics.Region;
 import android.os.Build;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.text.method.Touch;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by sunpeng on 2017/11/13.
@@ -26,7 +28,7 @@ public class RulerView extends View {
 
     private static final double PI2 = Math.PI * 2;
     private Paint mPaint;
-    private int mLineWidth = 20;
+    private static final int STROKE_WIDTH = 20;
     private int mLineColor = Color.YELLOW;
     private TouchMode mTouchMode = TouchMode.SINGLE_TOUCH;
     private PointF mLastP0,mLastP1;
@@ -39,7 +41,12 @@ public class RulerView extends View {
     private PointF p5,p6,p7,p8; //每次绘制完，尺子的四个顶点坐标
     private static int TOUCH_SLOP;
     private boolean mFirstDraw = true;
-    private Paint mLinePaint;
+    private Paint mBoardPaint;
+    private Paint mDialPaint;   //刻度画笔
+    private static final float DIAL_SPACING = 30; // 刻度间距
+    private static final float DIAL_LENGTH = 20;  //小刻度
+    private static final float DIAL_LENGTH_LONG = 40;  //大刻度
+    private List<Dial> mLeftDials,mRightDials;
     private Rect mRulerRect;
     private OnDrawFinishListener mOnDrawFinishListener;
     public RulerView(Context context) {
@@ -68,14 +75,18 @@ public class RulerView extends View {
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
         mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mPaint.setFilterBitmap(true);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
+//        mPaint.setStrokeJoin(Paint.Join.ROUND);
+//        mPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        mPaint.setStrokeWidth(mLineWidth);
+        mPaint.setStrokeWidth(STROKE_WIDTH);
         mPaint.setColor(mLineColor);
 
-        mLinePaint = new Paint(mPaint);
-        mLinePaint.setColor(Color.RED);
+        mBoardPaint = new Paint(mPaint);
+        mBoardPaint.setColor(Color.RED);
+
+        mDialPaint = new Paint(mPaint);
+        mDialPaint.setStrokeWidth(5);
+        mDialPaint.setColor(Color.BLACK);
 
         mLastP0 = new PointF();
         mLastP1 = new PointF();
@@ -89,9 +100,9 @@ public class RulerView extends View {
         if(mFirstDraw){
 
             mRulerLeft = getWidth() /2 - 150;
-            mRulerTop = -2000;
+            mRulerTop = -getHeight();
             mRulerRight = getWidth() /2 + 150;
-            mRulerBottom = 5000;
+            mRulerBottom = getHeight() * 2;
 
             mFirstDraw = false;
 
@@ -101,6 +112,8 @@ public class RulerView extends View {
             p4 = new PointF(mRulerRight,mRulerBottom);
 
             mRulerRect = new Rect(mRulerLeft, mRulerTop, mRulerRight, mRulerBottom);
+
+            initDials();
         }
 
         canvas.save();
@@ -108,6 +121,8 @@ public class RulerView extends View {
         canvas.rotate((float) Math.toDegrees(mRotateDegree),mPivot.x,mPivot.y);
         super.onDraw(canvas);
         canvas.drawRect(mRulerLeft, mRulerTop, mRulerRight, mRulerBottom,mPaint);
+        //画刻度
+        drawDials(canvas);
         //canvas是一个独立的坐标系，一开始跟view的坐标系是重合的，但是平移选装之后，canvas的坐标系也随着平移旋转，view的坐标系不变（重要）
 
         //算出尺子的四个顶点在view坐标系的坐标
@@ -119,7 +134,7 @@ public class RulerView extends View {
 
         canvas.restore();
 
-//        canvas.drawLine(p6.x,p6.y,p8.x,p8.y,mLinePaint);
+//        canvas.drawLine(p6.x,p6.y,p8.x,p8.y,mBoardPaint);
 
 
         if(mOnDrawFinishListener != null){
@@ -196,6 +211,53 @@ public class RulerView extends View {
         return true;
     }
 
+    /**
+     * 初始化刻度集合
+     */
+    private void initDials(){
+        mLeftDials = new ArrayList<>();
+        mRightDials = new ArrayList<>();
+
+        float length = p3.y - p1.y;
+
+        int count = Math.round(length / DIAL_SPACING);
+
+        for(int i = 0 ; i < count; i++){
+            float dialLength;
+            if(i % 5 == 0){
+                dialLength = DIAL_LENGTH_LONG;
+            }else {
+                dialLength = DIAL_LENGTH;
+            }
+            Dial leftDial = new Dial();
+            leftDial.startX = p1.x - STROKE_WIDTH / 2;
+            leftDial.startY = p1.y + i * DIAL_SPACING;
+            leftDial.stopX = p1.x + dialLength - STROKE_WIDTH / 2;
+            leftDial.stopY = p1.y + i * DIAL_SPACING;
+
+            mLeftDials.add(leftDial);
+
+
+            Dial rightDial = new Dial();
+            rightDial.startX = p2.x + STROKE_WIDTH / 2;
+            rightDial.startY = p2.y + i * DIAL_SPACING;
+            rightDial.stopX = p2.x - dialLength + STROKE_WIDTH / 2;
+            rightDial.stopY = p2.y + i * DIAL_SPACING;
+
+            mRightDials.add(rightDial);
+
+        }
+    }
+
+    private void drawDials(Canvas canvas){
+        for(int i = 0; i < mLeftDials.size(); i ++){
+            Dial leftDial = mLeftDials.get(i);
+            Dial rightDial = mRightDials.get(i);
+
+            canvas.drawLine(leftDial.startX,leftDial.startY,leftDial.stopX,leftDial.stopY,mDialPaint);
+            canvas.drawLine(rightDial.startX,rightDial.startY,rightDial.stopX,rightDial.stopY,mDialPaint);
+        }
+    }
 
     private float distance(float x0, float y0, float x1, float y1) {
         float dx = x1 - x0;
