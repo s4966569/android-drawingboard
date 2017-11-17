@@ -11,7 +11,7 @@ import android.graphics.PointF;
  */
 
 public class Line {
-    private float a, b ,c;
+    public float a, b ,c;
 
     public Line(PointF p1, PointF p2){
         a = p2.y - p1.y;

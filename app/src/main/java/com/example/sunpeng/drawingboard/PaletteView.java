@@ -126,7 +126,7 @@ public class PaletteView extends View {
         super.onDraw(canvas);
         if(mBgBitmap == null){
             Bitmap bitmap = BitmapFactory.decodeResource(getResources(),R.drawable.mm);
-            mBgBitmap = Bitmap.createBitmap(bitmap,0,0,getWidth(),getHeight());
+            mBgBitmap = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight());
         }
         canvas.drawBitmap(mBgBitmap,mMatrix,null);
         if (mBufferBitmap != null) {
