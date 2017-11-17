@@ -39,6 +39,7 @@ public class RulerView extends View {
     private boolean mFirstDraw = true;
     private Paint mBoardPaint;
     private Paint mDialPaint;   //刻度画笔
+    private float mTranY; //相对于view自己的坐标系（非旋转平移之后的）
     private static final float DIAL_SPACING = 30; // 刻度间距
     private static final float DIAL_LENGTH = 20;  //小刻度
     private static final float DIAL_LENGTH_LONG = 40;  //大刻度
@@ -106,6 +107,12 @@ public class RulerView extends View {
             p3 = new PointF(mRulerLeft,mRulerBottom);
             p4 = new PointF(mRulerRight,mRulerBottom);
 
+//            p1 = new PointF(getLeft(),getTop());
+//            p2 = new PointF(getRight(),getBottom());
+//            p3 = new PointF(getLeft(),getBottom());
+//            p4 = new PointF(getRight(),getBottom());
+
+
             mPivot = new PointF(getWidth() / 2, getHeight() / 2);
 
             mRulerRect = new Rect(mRulerLeft, mRulerTop, mRulerRight, mRulerBottom);
@@ -123,17 +130,26 @@ public class RulerView extends View {
         float tranY = getTranslationY();
         double radians = Math.toRadians(getRotation());
 
-        p5 = getPointAfterRotateAndTrans(p1,-tranX,-tranY, radians, mPivot.x,mPivot.y);
-        p6 = getPointAfterRotateAndTrans(p2,-tranX,-tranY, radians, mPivot.x,mPivot.y);
-        p7 = getPointAfterRotateAndTrans(p3,-tranX,-tranY, radians, mPivot.x,mPivot.y);
-        p8 = getPointAfterRotateAndTrans(p4,-tranX,-tranY, radians, mPivot.x,mPivot.y);
+        p1.set(p1.x + tranX, p1.y + tranY);
+        p2.set(p2.x + tranX, p2.y + tranY);
+        p3.set(p3.x + tranX, p3.y + tranY);
+        p4.set(p4.x + tranX, p4.y + tranY);
 
-//        canvas.drawLine(p2.x,p2.y,p4.x,p4.y,mBoardPaint);
+        mPivot.x += tranX;
+        mPivot.y += tranY;
+
+        p5 = getPointAfterRotateAndTrans1(p1,radians, mPivot.x,mPivot.y);
+        p6 = getPointAfterRotateAndTrans1(p2,radians, mPivot.x,mPivot.y);
+        p7 = getPointAfterRotateAndTrans1(p3,radians, mPivot.x,mPivot.y);
+        p8 = getPointAfterRotateAndTrans1(p4,radians, mPivot.x,mPivot.y);
+
+//        canvas.drawLine(p6.x,p6.y,p8.x,p8.y,mBoardPaint);
 
 
         if(mOnDrawFinishListener != null){
             mOnDrawFinishListener.onDrawFinish();
         }
+
     }
 
 
@@ -154,13 +170,20 @@ public class RulerView extends View {
                     float dx = x0 - lastX0;
                     float dy = y0 - lastY0;
 
+                    mTranY += dy;
+
+                    if(Math.abs (mTranY )  > 300){
+                        float a = mTranY  % DIAL_SPACING;
+                        dy = a - (mTranY - dy);
+                        mTranY = a ;
+                    }
+
                     double degrees = Math.toRadians(getRotation());
                     float dx1 = (float) (dx * Math.cos(degrees) - dy  * Math.sin(degrees)) ;
                     float dy1 = (float) (dy * Math.cos(degrees) + dx * Math.sin(degrees)) ;
 
                     float tranX = getTranslationX() +  dx1;
                     float tranY = getTranslationY() +  dy1;
-
 
                     setTranslationX(tranX);
                     setTranslationY(tranY);
@@ -194,15 +217,7 @@ public class RulerView extends View {
                     setTranslationY(tranY);
 
                     Log.i("event","tranx = " + String.valueOf(tranX) + ",trany = " + String.valueOf(tranY));
-
                 }
-
-//                    mRect.setPivotX(x0);
-//                    mRect.setPivotY(y0);
-//                    float pivotX = mRect.getPivotX();
-//                    float pivotY = mRect.getPivotY();
-//                    float dx1 = (float) ((dx - pivotX) * Math.cos(degrees) - (dy - pivotY) * Math.sin(degrees)) + pivotX;
-//                    float dy1 = (float) ((dy - pivotY ) * Math.cos(degrees) + (dx - pivotX) * Math.sin(degrees)) + pivotY;
 
                 break;
             case MotionEvent.ACTION_POINTER_UP:
@@ -302,13 +317,13 @@ public class RulerView extends View {
         return new PointF(x0 - tranX,y0 - tranY);
     }
 
-    //先平移再旋转（逆时针）
-    private PointF getPointAfterRotateAndTrans1(PointF pointF,float tranX, float tranY, double degrees,float pivotX,float pivotY){
+    //某个点绕一个点顺时针旋转之后的坐标
+    private PointF getPointAfterRotateAndTrans1(PointF pointF, double degrees,float pivotX,float pivotY){
 
-        float x = pointF.x - tranX;
-        float y = pointF.y - tranY;
-        float x0 = (float) ((x - pivotX) * Math.cos(degrees) - (y - pivotY) * Math.sin( degrees)) + pivotX;
-        float y0 = (float) ((y - pivotY) * Math.cos( degrees) + (x - pivotX) * Math.sin(degrees)) + pivotY;
+        float x = pointF.x;
+        float y = pointF.y;
+        float x0 = (float) ((x - pivotX) * Math.cos(PI2 - degrees) - (y - pivotY) * Math.sin(PI2 - degrees)) + pivotX;
+        float y0 = (float) ((y - pivotY) * Math.cos(PI2 -  degrees) + (x - pivotX) * Math.sin(PI2 - degrees)) + pivotY;
 
         return new PointF(x0,y0);
     }
