@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/DrawingBoard.iml" filepath="$PROJECT_DIR$/DrawingBoard.iml" />
+      <module fileurl="file://D:\AndroidProjects\android-drawingboard\DrawingBoard.iml" filepath="D:\AndroidProjects\android-drawingboard\DrawingBoard.iml" />
       <module fileurl="file://$PROJECT_DIR$/android-drawingboard.iml" filepath="$PROJECT_DIR$/android-drawingboard.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
