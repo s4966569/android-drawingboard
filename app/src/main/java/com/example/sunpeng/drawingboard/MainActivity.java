@@ -1,8 +1,10 @@
 package com.example.sunpeng.drawingboard;
 
 import android.content.Intent;
+import android.graphics.PointF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -68,10 +70,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mRulerView1.setOnDrawFinishListener(new RulerView.OnDrawFinishListener() {
+        mRulerView1.setOnDrawFinishListener(new RulerView.OnTransformFinishedListener() {
             @Override
-            public void onDrawFinish() {
+            public void onTransformFinished(PointF leftTop, PointF rightTop, PointF leftBottom, PointF rightBottom) {
                 mPaletteView.setBaseLine(mRulerView1.getLine2());
+//                mPaletteView.setLinePoints(rightTop,rightBottom);
+                Log.i("pos","x==" + String.valueOf(rightTop.x) +".....y=="+ String.valueOf(rightTop.y));
             }
         });
 

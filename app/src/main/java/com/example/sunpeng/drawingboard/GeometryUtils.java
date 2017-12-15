@@ -6,7 +6,7 @@ package com.example.sunpeng.drawingboard;
 
 public class GeometryUtils {
     /**
-     * 计算两条直线的夹角
+     * 计算两条直线的夹角（line2相对于line1的顺时针角度）
      * @return  返回的是弧度制的角
      */
     public static double getTwoLineDegree(Line line1,Line line2){

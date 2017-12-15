@@ -43,6 +43,7 @@ public class PaletteView extends View {
     private float mLastDis;
 
     private PointF midPoint;
+    private PointF mP1,mP2; //测试画线用
     private Boolean mIsMultiTouch = false;
 
     private Bitmap mBufferBitmap;
@@ -131,6 +132,10 @@ public class PaletteView extends View {
         canvas.drawBitmap(mBgBitmap,mMatrix,null);
         if (mBufferBitmap != null) {
             canvas.drawBitmap(mBufferBitmap,mMatrix,null);
+        }
+
+        if(mP1 != null && mP2 != null){
+            canvas.drawLine(mP1.x,mP1.y,mP2.x,mP2.y,mPaint);
         }
     }
 
@@ -309,6 +314,12 @@ public class PaletteView extends View {
 
     public void setBaseLine(Line line){
         mBaseLine = line;
+    }
+
+    public void setLinePoints(PointF p1, PointF p2){
+        this.mP1 = new PointF(p1.x,p1.y);
+        this.mP2 = new PointF(p2.x,p2.y);
+        postInvalidate();
     }
 
     private void setPaintMode() {
